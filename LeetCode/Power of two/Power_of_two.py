@@ -1,8 +1,6 @@
-
 '''
 Created on 2016年3月28日
-
-@author: zymxq
+@author: zhonghuan
 '''
 def isPowerOfTwo(self, n):
     """
