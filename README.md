@@ -8,4 +8,5 @@ LeetCode
 |229  |Majority Element II         |Python  |2016/4/11|Medium    |
 |7    |Reverse Integer             |C++     |2016/4/11|Easy      |      
 |227  |Basic Calculator II         |C++     |2016/4/16|Medium    |
+|118  |Pascal's Triangle           |Python  |2016/4/17|Easy      |
 
