@@ -9,4 +9,5 @@ LeetCode
 |7    |Reverse Integer             |C++     |2016/4/11|Easy      |      
 |227  |Basic Calculator II         |C++     |2016/4/16|Medium    |
 |118  |Pascal's Triangle           |Python  |2016/4/17|Easy      |
+|1    |Two Sum                     |C++     |2016/4/18|Easy      |
 
