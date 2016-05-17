@@ -12,4 +12,5 @@ LeetCode
 |1    |Two Sum                     |C++     |2016/4/18|Easy      |
 |8	  |String to Integer(atoi)     |C++     |2016/4/20|Easy      |
 |9    |Palindrome Number		   |C++     |2016/4/26|Easy      |
+|51   |N-Queens                    |C++     |2016/5/18|Hard      |
 
