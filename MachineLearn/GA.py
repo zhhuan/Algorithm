@@ -85,42 +85,16 @@ class GeneticFunctions(object):
         """mutate chromosome"""
         return chromosome
 
-class Center(object):
-    """docstring for Center"""
-    time_windows = [2,4,6,8,10,12,14,16,18,20,22,24]
-
-    def __init__(self, arg):
-        pass
-
 
 distribute_times = [[46,62,123,191,130,83,144,207,215,153,105,161,227],
                     [114,120,180,139,196,149,204,144,151,212,162,226,168],
-                    [166,179,127,72,131,206,145,89,99,156,114,173,230],
+                    [166,179,127,72,131,206,145,89,99,156,227,162,108],
                     [54,70,127,200,141,91,149,209,221,155,114,173,230],
                     [113,129,186,137,195,145,209,154,164,215,174,229,166],
                     [174,185,131,80,136,210,154,88,101,158,228,169,112]]
 
-market_area = [240,300,270,270,300,240]
-stash_area = [24,22,26,33,5,5,5,5,19,41,18,31,24]
-
-class Stash(object):
-    
-    def __init__(self,stash_index,time_window,resource_area):
-        self.stash_index = stash_index
-        self.time_window = time_window
-        self.resource_area = resource_area
-
-    def stash_market_time(mindex):
-        return distribute_times[self.stash_index][mindex]
-                  
-class Market(object):
-    
-    def __init__(self,market_index,market_area):
-        self.market_index = market_index
-        self.market_area = market_area
-
-    def market_stash_time(sindex):
-        return distribute_times[self.market_index][sindex]
+mareas = [240,300,270,270,300,240]
+sareas = [24,22,26,33,5,5,5,5,19,41,18,31,24]
 
 
 class Logistics(GeneticFunctions):
@@ -144,41 +118,16 @@ class Logistics(GeneticFunctions):
 
     def fitness(self, chromo):
         #计算适应度,适应度计算的规则为每条配送路径要满足题设条件，并且目标函数即车辆行驶的时间越少，适应度越高
-        stash_num = len(chromo)
-        vehi_fit = 0
-        mar2sta_fit = 0
-        vehi_couple = {}
-        market_stash = {}
-        for i in range(stash_num):
-            vehi_index = chromo[i][0]
-            if not vehi_index in vehi_couple:
-                vehi_couple[vehi_index] = []
-                vehi_couple[vehi_index].append([chromo[i],i])
-            else:
-                vehi_couple[vehi_index].append([chromo[i],i])
-            market_index = chromo[i][1]
-            if not market_index in market_stash:
-                market_stash[market_index] = []
-                market_stash[market_index].append([chromo[i],i])
-            else:
-                market_stash[market_index].append([chromo[i],i])
-            time_mar2sta = distribute_times[market_index-1][i]
-            vehi_fit += time_mar2sta
-        print(vehi_couple)
-        for vehi_index in vehi_couple:
-            target = vehi_couple.get(vehi_index)
-            for j in range(len(target)-1):
-                chromo_part_prev = target[j]
-                chromo_part_next = target[j+1]
-                stash_index_prev = chromo_part_prev[1]
-                market_index_next = chromo_part_next[0][1]
-                time_sta2mar = distribute_times[market_index_next-1][stash_index_prev]
-                mar2sta_fit += time_sta2mar
-        # if self.time_area_restrit(vehi_couple,market_stash):
-        #     flag = 0
-        # else:
-        #     flag = 1
-        fitness = mar2sta_fit + vehi_fit
+        flag = 1 
+        transfers = get_transfers(chromo)
+        flag = judge_over_area(transfers)
+        for transfer in transfers:
+            if transfer.arrival_time == 0:
+                flag = 0
+                break
+            drive_time += transfer.drive_time
+        
+        fitness = drive_time + 100000*(1-flag)
         return fitness
 
 
@@ -186,38 +135,126 @@ class Logistics(GeneticFunctions):
     def random_chromo(self,stash_num,market_num,veh_num):
         chromo = []
         for i in range(stash_num):
-            cor_veh = random.randint(1,veh_num)
-            cor_market = random.randint(1,market_num)
+            cor_veh = random.randrange(veh_num)
+            cor_market = random.randrange(market_num)
             chromo.append([cor_veh,cor_market])
         return chromo
 
-    def time_area_restrit(self,vehi_couple,market_stash):
-        for market_index in market_stash:
-            total_stasharea = 0
-            cor_stashs = market_stash[market_index]
-            for i in range(len(cor_stashs)):
-                cor_stashindex = cor_stashs[i]
-                cor_stasharea = stash_area[cor_stashindex]
-                total_stasharea += 5 * cor_stasharea
-            if total_stasharea > market_area[market_index-1]:
-                return False
 
-        for vehi_index in vehi_couple:
+def get_transfers(chromo):
+    chromo_size = len(chromo)
+    transfers = []
+    for stash_num in range(chromo_size):
+        prev_transfer = None
+        if stash_num == 0 :
+            car_num = chromo[stash_num][0]
+            market_num = chromo[stash_num][1]
+            cur_transfer = Transfer(car_num,stash_num,market_num)
+            transfers.append(cur_transfer)
+        else:
+            car_num = chromo[stash_num][0]
+            market_num = chromo[stash_num][1]
+            for transfer in transfers:
+                if transfer.car.car_num == car_num:
+                    prev_transfer = transfer
+            cur_transfer = Transfer(car_num,stash_num,market_num,prev_transfer)
+            transfers.append(cur_transfer)
+    return transfers
+
+def judge_over_area(transfers):
+    flag = 1
+    area_couples = {}
+    for transfer in transfers:
+        market_num = transfer.departure.market_num
+        if not market_num in area_couple:
+            area_couples[market_num] = [transfer]
+        else:
+            area_couples[market_num].append(transfer)
+
+    for market_num in area_couples:
+        total_area = 0
+        com_transfers = area_couples[market_num]
+        com_market = Market(market_num)
+        for transfer in com_transfers:
+            stash_area = transfer.destination.stash_area
+            total_area += 5*stash_area
+        if total_area > com_market.market_area:
+            flag = 0
+    return flag
+    
+
+
+class Transfer(object):
+    """docstring for Transfer"""
+    def __init__(self,car_num,stash_num,market_num,prev_transfer = None):
+        self.car = Car(car_num)
+        self.departure = Market(market_num)
+        self.destination = Stash(stash_num)
+        self.prev_transfer = prev_transfer
+        self.drive_time = self.get_drive_time()
+        self.arrival_time = self.get_arrival_time()
+    
+    def get_expected_time(self):
+        if not self.prev_transfer:
+            expected_time = distribute_times[self.departure.market_num][self.destination.stash_num]
+        else:
+            prev_stash = self.prev_transfer.destination
+            expected_time = self.prev_transfer.arrival_time + distribute_times[self.departure.market_num][prev_stash.stash_num] \
+            + distribute_times[self.departure.market_num][self.destination.stash_num]
+        return expected_time
+
+    def get_arrival_time(self):
+        expected_time = self.get_expected_time()
+        max_arrival_time = (self.destination.stash_num + 1) * 2 * 60
+        min_arrival_time = self.destination.stash_num * 2 * 60
+        if expected_time > max_arrival_time:
             arrival_time = 0
-            chromos = vehi_couple[vehi_index]
-            for i in range(len(chromos)):
-                if i == 0 :
-                    cor_stashindex += chromos[i][1]
-                    arrival_time += distribute_times[vehi_index-1][cor_stashindex]
-                    pass
+        elif expected_time < min_arrival_time:
+            arrival_time = min_arrival_time
+        else:
+            arrival_time = expected_time
+        return arrival_time
 
+    def get_drive_time(self):
+        if not self.prev_transfer:
+            drive_time = distribute_times[self.departure.market_num][self.destination.stash_num]
+        else:
+            prev_stash = self.prev_transfer.destination
+            drive_time = distribute_times[self.departure.market_num][prev_stash.stash_num] \
+            + distribute_times[self.departure.market_num][self.destination.stash_num]
+        return drive_time
+
+
+class Car(object):
+    def __init__(self,car_num):
+        self.car_num = car_num
+
+
+class Market(object):
+    """docstring for Market"""
+    def __init__(self,market_num):
+        self.market_num = market_num
+        self.market_area = mareas[market_num]
+
+
+class Stash(object):
+    def __init__(self,stash_num):
+        self.stash_num = stash_num
+        self.stash_area = sareas[stash_num]
+        
 
 if __name__ == '__main__':
     """solve logistics distribution problem"""
-    logi = Logistics()
-    populations = logi.initial(13,6,3)
-    fits_pops = [(logi.fitness(chromo), chromo) for chromo in populations]
-    print(fits_pops)
+    # logi = Logistics()
+    # populations = logi.initial(13,6,3)
+    # fits_pops = [(logi.fitness(chromo), chromo) for chromo in populations]
+    # print(fits_pops)
+    chromo_demo = [[0,0],[0,3],[1,1],[2,5],[2,2],[0,0],[2,2],[1,5],[1,2],[0,4],[2,0],[0,3],[1,2]]
+    transfers = get_transfers(chromo_demo)
+    for transfer in transfers:
+        print(transfer.arrival_time)
+    for transfer in transfers:
+        print(transfer.car.car_num,':',transfer.drive_time)
     
 
         
