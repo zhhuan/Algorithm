@@ -19,3 +19,20 @@ op3->e
 
 ```
 
+```flow
+st=>start: Start
+sub=>subroutine: 计算预计到达时间RT
+io=>inputoutput: RT
+cond1=>condition: RT大于HT
+cond2=>condition: RT小于LT
+op1=>operation: real_time = RT
+op2=>operation: real_time = LT
+
+st->sub->io->cond1
+cond1(no)->sub
+cond1(yes)->cond2
+cond2(no)->op1
+cond2(yes)->op2
+
+```
+
