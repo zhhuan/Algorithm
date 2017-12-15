@@ -12,6 +12,18 @@ import pdb
 import random
 
 
+
+distribute_times = [[46,62,123,191,130,83,144,207,215,153,105,161,227],
+                    [114,120,180,139,196,149,204,144,151,212,162,226,168],
+                    [166,179,127,72,131,206,145,89,99,156,227,162,108],
+                    [54,70,127,200,141,91,149,209,221,155,114,173,230],
+                    [113,129,186,137,195,145,209,154,164,215,174,229,166],
+                    [174,185,131,80,136,210,154,88,101,158,228,169,112]]
+
+mareas = [240,300,270,270,300,240]
+sareas = [24,22,26,33,5,5,5,5,19,41,18,31,24]
+
+
 class GeneticAlgorithm(object):
     def __init__(self, genetics):
         pass
@@ -42,62 +54,7 @@ class GeneticAlgorithm(object):
         return nexts[0:size]
 
 
-class GeneticFunctions(object):
-    """docstring for GeneticFunctions"""
-    def probability_crossover(self):
-        """return rate of occur corssover(0.0~1.0)."""
-        return 0.75
-
-    def probability_mutation(self):
-        """return rate of occur mutation(0.0~1.0)."""
-        return 0.02
-
-    def initial(self):
-        """return list of initial population."""
-        return []
-
-    def fitness(self, chromosome):
-        """returns domain fitness value of chromosome."""
-        return fitness
-
-    def check_stop(self, fits_populations):
-        """stop run if returns True.
-        
-        :param fits_populations: list of (fitness_value, chromsome) 
-        """
-        return False
-
-    def parents(self, fits_populations):
-        """generator of selected parents"""
-        gen = list(sorted(fits_populations))
-        while True:
-            f1, ch1 = next(gen)
-            f2, ch2 = next(gen)
-            yield(ch1, ch2)
-            pass
-        return 
-
-    def crossover(self, parents):
-        """breed children"""
-        return parents
-
-    def mutation(self, chromosome):
-        """mutate chromosome"""
-        return chromosome
-
-
-distribute_times = [[46,62,123,191,130,83,144,207,215,153,105,161,227],
-                    [114,120,180,139,196,149,204,144,151,212,162,226,168],
-                    [166,179,127,72,131,206,145,89,99,156,227,162,108],
-                    [54,70,127,200,141,91,149,209,221,155,114,173,230],
-                    [113,129,186,137,195,145,209,154,164,215,174,229,166],
-                    [174,185,131,80,136,210,154,88,101,158,228,169,112]]
-
-mareas = [240,300,270,270,300,240]
-sareas = [24,22,26,33,5,5,5,5,19,41,18,31,24]
-
-
-class Logistics(GeneticFunctions):
+class Logistics(object):
     """docstring for logistics"""
     def __init__(self,generations=50,size=100,prob_crossover=0.75,prob_mutation=0.3):
         self.counter = 0
@@ -130,6 +87,26 @@ class Logistics(GeneticFunctions):
         fitness = drive_time + 100000*(1-flag)
         return fitness
 
+    def check_stop(self, fits_populations):
+        self.counter += 1
+        return self.counter >= self.generations
+
+    def parents(self, fits_populations):
+        while True:
+            father = self.select(fits_populations)
+            mother = self.select(fits_populations)
+            yield (father, mother)
+            pass
+        pass
+
+    def crossover(self, parents):
+        """breed children"""
+        return parents
+
+    def mutation(self, chromosome):
+        """mutate chromosome"""
+        return chromosome
+
 
     # internals
     def random_chromo(self,stash_num,market_num,veh_num):
@@ -139,6 +116,29 @@ class Logistics(GeneticFunctions):
             cor_market = random.randrange(market_num)
             chromo.append([cor_veh,cor_market])
         return chromo
+
+    def select(self, fits_populations):
+        sum_f = 0
+        for i in range(self.size):
+            sum_f += fits_populations[i][0]
+        p = [0] * self.size 
+        for i in range(self.size):
+            p[i] = 1 - (fits_populations[i][0] / sum_f)
+        q = [0] * self.size
+        for i in range(self.size):
+            s = 0
+            for j in range(0, i+1):
+                s += p[j]
+            q[i] = s
+
+        v = []
+        for i in range(self.size):
+            r = random.random()
+            if r < q[0]:
+                return fits_populations[0][1]
+            for j in range(1,self.size):
+                if q[j-1] < r <= q[j]:
+                    return fits_populations[j][1]
 
 
 def get_transfers(chromo):
@@ -183,6 +183,38 @@ def judge_over_area(transfers):
     return flag
     
 
+def parents(fits_populations):
+    while True:
+        father = select(fits_populations)
+        mother = select(fits_populations)
+        yield (father, mother)
+        pass
+    pass
+
+def select(fits_populations):
+        sum_f = 0
+        size = len(fits_populations)
+        for i in range(size):
+            sum_f += 1/fits_populations[i][0]
+        p = [0] * size 
+        for i in range(size):
+            p[i] =  (1 / fits_populations[i][0])/sum_f
+        print(p)
+        q = [0] * size
+        for i in range(size):
+            s = 0
+            for j in range(0, i+1):
+                s += p[j]
+            q[i] = s
+
+        v = []
+        for i in range(size):
+            r = random.random()
+            if r < q[0]:
+                return fits_populations[0][1]
+            for j in range(1,size):
+                if q[j-1] < r <= q[j]:
+                    return fits_populations[j][1]
 
 class Transfer(object):
     """docstring for Transfer"""
@@ -249,12 +281,15 @@ if __name__ == '__main__':
     # populations = logi.initial(13,6,3)
     # fits_pops = [(logi.fitness(chromo), chromo) for chromo in populations]
     # print(fits_pops)
-    chromo_demo = [[0,0],[0,3],[1,1],[2,5],[2,2],[0,0],[2,2],[1,5],[1,2],[0,4],[2,0],[0,3],[1,2]]
-    transfers = get_transfers(chromo_demo)
-    for transfer in transfers:
-        print(transfer.arrival_time)
-    for transfer in transfers:
-        print(transfer.car.car_num,':',transfer.drive_time)
+    fits_populations = [
+        [10000,[[0,0],[0,3],[1,1],[2,5],[2,2],[0,0],[2,2],[1,5],[1,2],[0,4],[2,0],[0,3],[1,2]]],
+        [2703,[[0,1],[0,3],[1,1],[2,5],[2,2],[0,0],[2,2],[1,5],[1,2],[0,4],[2,0],[0,3],[1,2]]],
+        [500,[[0,2],[0,3],[1,1],[2,5],[2,2],[0,0],[2,2],[1,5],[1,2],[0,4],[2,0],[0,3],[1,2]]],
+    ]
+
+    parents_generator = parents(fits_populations)
+    parents = next(parents_generator)
+    print(parents)
     
 
         
